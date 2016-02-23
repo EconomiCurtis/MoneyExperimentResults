@@ -1,0 +1,25 @@
+---
+title: "Money Experiment Plot"
+author: "Curtis Kephart for Justin Ritz"
+date: "Winter, 2016"
+output: pdf_document
+---
+
+
+## Money Experiment Notes
+
+![](figs/BlueTicketUse.pdf) 
+
+Plot notes: 
+
+- Vertical black bars separate sequences. 
+- Blue line segments indicate spells this subject held a Blue ticket. 
+- Colored scatter points indicate different types of possible trades are rejections. 
+- By implication, no scatter point means one of two things: 
+    + No trade was possible
+    + Or if I had a Blue ticket, I didn't make an offer but the other trader did.
+
+
+The mark down doc `DataNotes.md` describe the session data `MoneyExperimentsResults.csv`. 
+The r script, `01_dataCleaning.R` cleans the data, and `BlueTicketTradingPlots.R` implements the plot. 
+Also see the helper data frames `M.E.df.plotPrep` and `BlueTicketHolder_startstop` for insight into the steps taken.  
