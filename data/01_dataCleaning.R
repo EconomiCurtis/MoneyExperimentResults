@@ -42,75 +42,79 @@ M.E.df <- M.E.df %>%
   )
 
 
+# Function: Create table of all itemType (e.g. blue-ticket, good) holding spells ----------
+itemLogger <- function(AllData = M.E.df, 
+                       TicketHolders = BlueTicketHolders,  
+                       itemName = "blue ticket"
+){
+  
+  #' M.E.df: money experiemnt data frame
+  #' TicketHolders: subset of M.E.df for this class of item, e.g. BlueTicketHolders
+  #' TicketHolder_startstop: empty df to store item-holding spells
+  #' 
+  #' delta: 
+  #' 
+  #' Returns: data frame of item holdings, start adn stop times
+  #' 
 
-# all subject+periods of blue ticket holders
-BlueTicketHolders <- M.E.df %>%
-  dplyr::filter(
-    player_type == 2
-  ) %>% 
-  arrange(subject_id, sequence, seq_period) %>%
-  group_by(subject_id, sequence) %>%
-  mutate(delta = seq_period - lag(seq_period))
-
-# Create table - all blue ticket holding spells -------------
-
-# Bin, to track people that hold the blue ticket
-BlueTicketHolder_startstop <- data.frame(
-  subject_id = rep(NA, nrow(BlueTicketHolders)), 
-  sequence = rep(NA, nrow(BlueTicketHolders)),
-  seq_period = rep(NA, nrow(BlueTicketHolders)),
-  start = rep(NA, nrow(BlueTicketHolders)), 
-  stop = rep(NA, nrow(BlueTicketHolders)),
-  AcquiredBy = rep(NA, nrow(BlueTicketHolders)),
-  HeldTil = rep(NA, nrow(BlueTicketHolders))
-)
-cnt = 1
-
-for (id in sort(unique(M.E.df$subject_id))){
-  subdf = dplyr::filter(BlueTicketHolders, subject_id == id)
-  for (i in 1:nrow(subdf)){
-    
-    # people who start off with the blue ticket
-    # or trade for it
-    if (is.na(subdf$delta[i]) || (subdf$delta[i] != 1)){
-      BlueTicketHolder_startstop$subject_id[cnt] = id
-      BlueTicketHolder_startstop$sequence[cnt] = subdf$sequence[i]
-      BlueTicketHolder_startstop$seq_period[cnt] = subdf$seq_period[i]
-      BlueTicketHolder_startstop$start[cnt] = subdf$period[i] - 1
+  
+  TicketHolder_startstop <- data.frame(
+  subject_id = rep(NA, nrow(TicketHolders)), 
+  sequence = rep(NA, nrow(TicketHolders)),
+  seq_period = rep(NA, nrow(TicketHolders)),
+  start = rep(NA, nrow(TicketHolders)), 
+  stop = rep(NA, nrow(TicketHolders)),
+  AcquiredBy = rep(NA, nrow(TicketHolders)),
+  HeldTil = rep(NA, nrow(TicketHolders))
+  )
+  
+  cnt = 1
+  IDs <- sort(unique(AllData$subject_id))
+  for (id in IDs){
+    subdf = dplyr::filter(TicketHolders, subject_id == id)
+    for (i in 1:nrow(subdf)){
       
-      if ((!is.na(subdf$delta[i]) || is.na(subdf$delta[i])) && subdf$seq_period[i] == 1){
-        BlueTicketHolder_startstop$AcquiredBy[cnt] = "Endowed with blue ticket"
-      } else {
-        BlueTicketHolder_startstop$AcquiredBy[cnt] = "Traded for blue ticket"
-      }
-    }
-    
-    if (is.na(subdf$delta[i]) && is.na(subdf$delta[i+1])){
-      # pepole that hold the blue ticket from start to end until the end of the sequence
-      BlueTicketHolder_startstop$stop[cnt] = subdf$peirod.max[i] + 1
-      BlueTicketHolder_startstop$HeldTil[cnt] = "End of sequence"
-      cnt <- cnt + 1
-      
-    } else if (subdf$delta[i] == 1 && (subdf$delta[i + 1] != 1 | is.na(subdf$delta[i + 1]))){
-      # pepole that manage to trade away the blue ticket in a sequence
-      BlueTicketHolder_startstop$stop[cnt] = subdf$period[i]
-      BlueTicketHolder_startstop$HeldTil[cnt] = "Traded away"
-      if (subdf$period[i] == subdf$peirod.max[i]){
-        BlueTicketHolder_startstop$HeldTil[cnt] = "End of sequence"
+      # people who start off with the blue ticket
+      # or trade for it
+      if (is.na(subdf$delta[i]) || (subdf$delta[i] != 1)){
+        TicketHolder_startstop$subject_id[cnt] = id
+        TicketHolder_startstop$sequence[cnt] = subdf$sequence[i]
+        TicketHolder_startstop$seq_period[cnt] = subdf$seq_period[i]
+        TicketHolder_startstop$start[cnt] = subdf$period[i] - 1
+        
+        if ((!is.na(subdf$delta[i]) || is.na(subdf$delta[i])) && subdf$seq_period[i] == 1){
+          TicketHolder_startstop$AcquiredBy[cnt] = paste("Endowed with,",itemName)
+        } else {
+          TicketHolder_startstop$AcquiredBy[cnt] = paste("Traded for", itemName)
+        }
       }
       
-      cnt <- cnt + 1
+      if (is.na(subdf$delta[i]) && is.na(subdf$delta[i+1])){
+        # pepole that hold the blue ticket from start to end until the end of the sequence
+        TicketHolder_startstop$stop[cnt] = subdf$peirod.max[i] + 1
+        TicketHolder_startstop$HeldTil[cnt] = "End of sequence"
+        cnt <- cnt + 1
+        
+      } else if ((subdf$delta[i] == 1 || is.na(subdf$delta[i])) && (subdf$delta[i + 1] != 1 | is.na(subdf$delta[i + 1]))){
+        # pepole that manage to trade away the blue ticket in a sequence
+        TicketHolder_startstop$stop[cnt] = subdf$period[i]
+        TicketHolder_startstop$HeldTil[cnt] = "Traded away"
+        if (subdf$period[i] == subdf$peirod.max[i]){
+          TicketHolder_startstop$HeldTil[cnt] = "End of sequence"
+        }
+        
+        cnt <- cnt + 1
+      }
+      
+      
     }
-
     
   }
   
-}
-
-BlueTicketHolder_startstop <- BlueTicketHolder_startstop %>%
-  dplyr::filter(!is.na(subject_id)) %>%
-  tbl_df %>%
-  left_join(  # adding subject factor (subject 1, ...)
+  TicketHolder_startstop <- TicketHolder_startstop %>%
+    dplyr::filter(!is.na(subject_id)) %>%
+    tbl_df %>%
+    left_join(  # adding subject factor (subject 1, ...)
       data.frame(
         subject_id = 1:16,
         subject = factor(
@@ -118,10 +122,22 @@ BlueTicketHolder_startstop <- BlueTicketHolder_startstop %>%
           levels = paste("subject",1:16))
       ),
       by = "subject_id"
+    ) %>% 
+    mutate(
+      ItemType = itemName
     )
   
+  
+  return(TicketHolder_startstop)
+  
+}
 
-rm(subdf)
+# test <- itemLogger()
+
+
+
+
+
 
 
 
