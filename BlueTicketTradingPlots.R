@@ -11,6 +11,17 @@ source("data/01_dataCleaning.R") #requires data from here...
 #' Goal:
 #' show all the times a sub
 
+BlueTicketHolder_startstop <- itemLogger(
+  AllData = M.E.df,
+  TicketHolders = M.E.df %>% # all subject+periods of blue ticket holders
+    dplyr::filter(
+      player_type == 2
+    ) %>% 
+    arrange(subject_id, sequence, seq_period) %>%
+    group_by(subject_id, sequence) %>%
+    mutate(delta = seq_period - lag(seq_period)),
+  itemName = "blue ticket"
+)
 
 # Plot prep
 M.E.df.plotPrep <- M.E.df %>%
@@ -39,7 +50,7 @@ ggplot(
   ) + 
   geom_vline(
     xintercept = (PeriodsTab %>% dplyr::filter(seq_period == 1))$period - 1,
-    color = "black", size = 1) +
+    color = "black", size = 1, alpha = 0.6) +
   geom_segment(
     data = BlueTicketHolder_startstop,
     aes(
@@ -54,7 +65,7 @@ ggplot(
   geom_point(
     data = (M.E.df.plotPrep %>% dplyr::filter(!is.na(TradeType))),
     aes(colour = TradeType),
-    size = 3, alpha = 0.9) +
+    size = 3, alpha = 0.5) +
   theme_minimal() +
   theme(
     legend.position	= "top",
