@@ -1,0 +1,91 @@
+#' Plots
+#' Blue ticket trading. 
+#' 
+#' 
+
+
+library("ggplot2")
+library("dplyr")
+source("data/01_dataCleaning.R") #requires data from here...
+
+#' Goal:
+#' show all the times a subject traded with a good
+GoodHolder_startstop <- itemLogger(
+  AllData = M.E.df,
+  TicketHolders = BlueTicketHolders <- M.E.df %>% # all subject+periods of blue ticket holders
+    dplyr::filter(
+      player_type == 3
+    ) %>% 
+    arrange(subject_id, sequence, seq_period) %>%
+    group_by(subject_id, sequence) %>%
+    mutate(delta = seq_period - lag(seq_period)),
+  itemName = "good"
+)
+
+# Plot prep
+M.E.df.plotPrep <- M.E.df %>%
+  mutate(
+    TradeType = NA,
+    TradeType = ifelse(player_type == 3 & partner_type == 2 & (player_makes_offer + partner_makes_offer == 2),
+                       yes = "Trade: My Good for Partner's Blue Ticket",
+                       no = TradeType),
+    # TradeType = ifelse(player_type == 2 & partner_type == 3 & (player_makes_offer + partner_makes_offer == 2),
+    #                    yes = "Trade: My Blue Ticket for Partner's Good",
+    #                    no = TradeType),
+    TradeType = ifelse(player_type == 3 & partner_type == 2 & (player_makes_offer == 1 & partner_makes_offer != 1),
+                       yes = "Rejected by Partner: My Good for Partner's Blue Ticket",
+                       no = TradeType),
+    TradeType = ifelse(player_type == 2 & partner_type == 3 & (player_makes_offer == 1 & partner_makes_offer != 1),
+                       yes = "Rejected by Partner: My Blue Ticket for Partner's Good",
+                       no = TradeType),
+    TradeType = ifelse(player_type == 3 & partner_type == 1 & (player_makes_offer == 1 & partner_makes_offer != 1),
+                       yes = "Rejected by Partner: My Blue Ticket for Partner's Good",
+                       no = TradeType),
+    TradeType = ifelse(player_type == 3 & partner_type == 1 & (player_makes_offer + partner_makes_offer == 2),
+                       yes = "Trade: My Good for Partner's Red Ticket",
+                       no = TradeType),
+    TradeType = ifelse(player_type == 1 & partner_type == 3 & (player_makes_offer == 1 & partner_makes_offer != 1),
+                       yes = "Rejected by Partner: My Red Ticket for Partner's Good",
+                       no = TradeType),
+    TradeType = ifelse(player_type == 1 & partner_type == 3 & (player_makes_offer + partner_makes_offer == 2),
+                       yes = "Trade: My Red Ticket for Partner's Good",
+                       no = TradeType)
+  ) 
+
+
+ggplot(
+  data = M.E.df.plotPrep, 
+  aes(
+    x = period,
+    y = subject)
+) + 
+  geom_vline(
+    xintercept = (PeriodsTab %>% dplyr::filter(seq_period == 1))$period - 1,
+    color = "black", size = 1, alpha = 0.6) +
+  geom_segment(
+    data = GoodHolder_startstop,
+    aes(
+      y = subject,
+      yend = subject,
+      x = start, 
+      xend = stop
+    ),
+    color = "darkgreen",
+    size = 1.5, alpha = 0.5
+  ) +
+  geom_point(
+    data = (M.E.df.plotPrep %>% dplyr::filter(!is.na(TradeType))),
+    aes(colour = TradeType),
+    size = 3, alpha = 0.5) +
+  theme_minimal() +
+  theme(
+    legend.position	= "top",
+    legend.direction = "vertical"
+  ) + 
+  ggtitle(" ") +
+  guides(col = guide_legend(ncol = 2)) +
+  theme(panel.grid.major.x = element_blank(), panel.grid.minor.x = element_blank())
+
+# adjust postiioning of legend
+# http://www.cookbook-r.com/Graphs/Legends_(ggplot2)/
+# check out ncol... http://docs.ggplot2.org/0.9.3.1/guide_legend.html
